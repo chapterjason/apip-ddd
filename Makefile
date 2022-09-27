@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-DC = docker-compose
+DC = docker compose
 EXEC = $(DC) exec php
 COMPOSER = $(EXEC) composer
 
