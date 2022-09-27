@@ -88,7 +88,7 @@ php-cs-fixer:
 
 ## Run psalm static analysis
 psalm:
-	@$(EXEC) vendor/bin/psalm --show-info=true
+	@$(EXEC) vendor/bin/psalm --show-info=true --no-cache
 
 ## Run code depedencies static analysis
 deptrac:
