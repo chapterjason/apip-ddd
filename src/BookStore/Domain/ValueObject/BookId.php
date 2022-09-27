@@ -8,7 +8,6 @@ use App\Shared\Domain\ValueObject\AggregateRootId;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Embeddable]
-final class BookId implements \Stringable
+final class BookId extends AggregateRootId
 {
-    use AggregateRootId;
 }
