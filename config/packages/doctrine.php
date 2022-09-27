@@ -40,6 +40,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                         'dir' => '%kernel.project_dir%/src/User/Domain',
                         'prefix' => 'App\User\Domain',
                     ],
+                    'BookOrder' => [
+                        'is_bundle' => false,
+                        'type' => 'attribute',
+                        'dir' => '%kernel.project_dir%/src/BookOrder/Domain',
+                        'prefix' => 'App\BookOrder\Domain',
+                    ],
                 ],
             ],
         ],

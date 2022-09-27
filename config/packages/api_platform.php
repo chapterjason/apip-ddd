@@ -11,6 +11,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
             'paths' => [
                 '%kernel.project_dir%/src/BookStore/Infrastructure/ApiPlatform/Resource/',
                 '%kernel.project_dir%/src/User/Infrastructure/ApiPlatform/Resource/',
+                '%kernel.project_dir%/src/BookOrder/Infrastructure/ApiPlatform/Resource/',
                 '%kernel.project_dir%/src/Subscription/Entity/',
             ],
         ],

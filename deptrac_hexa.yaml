@@ -2,6 +2,7 @@ parameters:
     paths:
         - ./src/BookStore
         - ./src/User
+        - ./src/BookOrder
         - ./src/Shared
 
     layers:
