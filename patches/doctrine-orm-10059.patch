@@ -1,0 +1,526 @@
+From 55f60b03d3848c8cda8155ec18abea957f05e1af Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 22:38:35 +0200
+Subject: [PATCH 1/8] Fix setting readonly properties in different scopes
+
+---
+ .../Mapping/ReflectionEmbeddedProperty.php    |   8 +-
+ .../ORM/Functional/Ticket/GH10049Test.php     | 102 ++++++++++++++++++
+ 2 files changed, 109 insertions(+), 1 deletion(-)
+ create mode 100644 tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index 9e6a4a2bd96..53dd2b774b3 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -78,6 +78,12 @@ public function setValue($object, $value = null)
+             $this->parentProperty->setValue($object, $embeddedObject);
+         }
+
+-        $this->childProperty->setValue($embeddedObject, $value);
++        if ($this->childProperty->isReadOnly()) {
++            // changing a read-only property is not allowed to do so we are changing the scope to the declaring class
++            $class = $this->childProperty->getDeclaringClass();
++            $class->getProperty($this->childProperty->getName())->setValue($embeddedObject, $value);
++        } else {
++            $this->childProperty->setValue($embeddedObject, $value);
++        }
+     }
+ }
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+new file mode 100644
+index 00000000000..4fab0e97280
+--- /dev/null
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+@@ -0,0 +1,102 @@
++<?php
++
++declare(strict_types=1);
++
++namespace Doctrine\Tests\ORM\Functional\Ticket;
++
++use Doctrine\ORM\Mapping\Column;
++use Doctrine\ORM\Mapping\Embeddable;
++use Doctrine\ORM\Mapping\Embedded;
++use Doctrine\ORM\Mapping\Entity;
++use Doctrine\ORM\Mapping\Id;
++use Doctrine\Tests\OrmFunctionalTestCase;
++
++/**
++ * @group GH-10049
++ */
++class GH10049Test extends OrmFunctionalTestCase
++{
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        $this->_schemaTool->createSchema(
++            [
++                $this->_em->getClassMetadata(GH10049Book::class),
++            ]
++        );
++    }
++
++    protected function tearDown(): void
++    {
++        $this->_schemaTool->dropSchema(
++            [
++                $this->_em->getClassMetadata(GH10049Book::class),
++            ]
++        );
++
++        parent::tearDown();
++    }
++
++    public function testIssue(): void
++    {
++        $id = "b";
++
++        $book = new GH10049Book(new GH10049BookId($id));
++
++        $this->_em->persist($book);
++        $this->_em->flush();
++
++        $this->_em->clear();
++
++        $repository = $this->_em->getRepository(GH10049Book::class);
++
++        $persistedBook = $repository->find($id);
++
++        // assert Book was persisted and could be hydrated
++        self::assertInstanceOf(GH10049Book::class, $persistedBook);
++        self::assertEquals($id, $persistedBook->id->value);
++    }
++}
++
++abstract class GH10049AggregatedRootId
++{
++    /**
++     * @Id
++     * @Column(name="id", type="string")
++     */
++    public readonly string $value;
++
++    public function __construct(?string $value = null)
++    {
++        $this->value = $value ?? "a";
++    }
++
++    public function __toString()
++    {
++        return $this->value;
++    }
++}
++
++/**
++ * @Embeddable
++ */
++final class GH10049BookId extends GH10049AggregatedRootId
++{
++}
++
++/**
++ * @Entity
++ */
++class GH10049Book
++{
++    /**
++     * @Embedded(columnPrefix=false)
++     */
++    public readonly GH10049BookId $id;
++
++    public function __construct(?GH10049BookId $id = null)
++    {
++        $this->id = $id ?? new GH10049BookId();
++    }
++}
+
+From 64d979ad5fcd1b4724ca6045dc003fdabfd30ece Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 22:42:51 +0200
+Subject: [PATCH 2/8] Run vendor/bin/phpcbf
+
+---
+ lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php   | 8 +++++---
+ .../Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php  | 8 +++-----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index 53dd2b774b3..5494e504167 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -78,10 +78,12 @@ public function setValue($object, $value = null)
+             $this->parentProperty->setValue($object, $embeddedObject);
+         }
+
+-        if ($this->childProperty->isReadOnly()) {
++        $declaringClass =  $this->childProperty->getDeclaringClass();
++
++        if ($this->childProperty->isReadOnly() && $declaringClass->getName() !== $this->embeddedClass) {
+             // changing a read-only property is not allowed to do so we are changing the scope to the declaring class
+-            $class = $this->childProperty->getDeclaringClass();
+-            $class->getProperty($this->childProperty->getName())->setValue($embeddedObject, $value);
++            $scopedChildProperty = $declaringClass->getProperty($this->childProperty->getName());
++            $scopedChildProperty->setValue($embeddedObject, $value);
+         } else {
+             $this->childProperty->setValue($embeddedObject, $value);
+         }
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+index 4fab0e97280..7a1bffa2315 100644
+--- a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+@@ -40,7 +40,7 @@ protected function tearDown(): void
+
+     public function testIssue(): void
+     {
+-        $id = "b";
++        $id = 'b';
+
+         $book = new GH10049Book(new GH10049BookId($id));
+
+@@ -69,7 +69,7 @@ abstract class GH10049AggregatedRootId
+
+     public function __construct(?string $value = null)
+     {
+-        $this->value = $value ?? "a";
++        $this->value = $value ?? 'a';
+     }
+
+     public function __toString()
+@@ -90,9 +90,7 @@ final class GH10049BookId extends GH10049AggregatedRootId
+  */
+ class GH10049Book
+ {
+-    /**
+-     * @Embedded(columnPrefix=false)
+-     */
++    /** @Embedded(columnPrefix=false) */
+     public readonly GH10049BookId $id;
+
+     public function __construct(?GH10049BookId $id = null)
+
+From 0693ae348c75252081ed8aa3d771d868579e0159 Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 22:44:32 +0200
+Subject: [PATCH 3/8] Add php requirement in test
+
+---
+ tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+index 7a1bffa2315..e84de57940f 100644
+--- a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+@@ -12,6 +12,7 @@
+ use Doctrine\Tests\OrmFunctionalTestCase;
+
+ /**
++ * @requires PHP 8.1
+  * @group GH-10049
+  */
+ class GH10049Test extends OrmFunctionalTestCase
+
+From 848ab85a9ffcfbe99f1e2fbcb1be53e31c797e76 Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 23:23:48 +0200
+Subject: [PATCH 4/8] Add checks for php 8.1
+
+---
+ .../Mapping/ReflectionEmbeddedProperty.php    | 20 ++++---
+ .../ORM/Functional/Ticket/GH10049Mocks.php    | 55 +++++++++++++++++++
+ .../ORM/Functional/Ticket/GH10049Test.php     | 48 +---------------
+ 3 files changed, 71 insertions(+), 52 deletions(-)
+ create mode 100644 tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index 5494e504167..19e25fb9efd 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -8,6 +8,9 @@
+ use ReflectionProperty;
+ use ReturnTypeWillChange;
+
++use function method_exists;
++use function var_dump;
++
+ /**
+  * Acts as a proxy to a nested Property structure, making it look like
+  * just a single scalar property.
+@@ -78,14 +81,17 @@ public function setValue($object, $value = null)
+             $this->parentProperty->setValue($object, $embeddedObject);
+         }
+
+-        $declaringClass =  $this->childProperty->getDeclaringClass();
++        if (method_exists($this->childProperty, 'isReadOnly')) {
++            $declaringClass =  $this->childProperty->getDeclaringClass();
++
++            if ($this->childProperty->isReadOnly() && $declaringClass->getName() !== $this->embeddedClass) {
++                $scopedChildProperty = $declaringClass->getProperty($this->childProperty->getName());
++                $scopedChildProperty->setValue($embeddedObject, $value);
+
+-        if ($this->childProperty->isReadOnly() && $declaringClass->getName() !== $this->embeddedClass) {
+-            // changing a read-only property is not allowed to do so we are changing the scope to the declaring class
+-            $scopedChildProperty = $declaringClass->getProperty($this->childProperty->getName());
+-            $scopedChildProperty->setValue($embeddedObject, $value);
+-        } else {
+-            $this->childProperty->setValue($embeddedObject, $value);
++                return;
++            }
+         }
++
++        $this->childProperty->setValue($embeddedObject, $value);
+     }
+ }
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+new file mode 100644
+index 00000000000..feeb26cb1e4
+--- /dev/null
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+@@ -0,0 +1,55 @@
++<?php
++
++declare(strict_types=1);
++
++namespace Doctrine\Tests\ORM\Functional\Ticket;
++
++use Doctrine\ORM\Mapping\Column;
++use Doctrine\ORM\Mapping\Embeddable;
++use Doctrine\ORM\Mapping\Embedded;
++use Doctrine\ORM\Mapping\Entity;
++use Doctrine\ORM\Mapping\Id;
++
++/**
++ * This file is required to be in a separate file to allow using PHP 8.1 features which will otherwise break tests against PHP 8.0 or lower
++ */
++
++abstract class GH10049AggregatedRootId
++{
++    /**
++     * @Id
++     * @Column(name="id", type="string")
++     */
++    public readonly string $value;
++
++    public function __construct(?string $value = null)
++    {
++        $this->value = $value ?? 'a';
++    }
++
++    public function __toString()
++    {
++        return $this->value;
++    }
++}
++
++/**
++ * @Embeddable
++ */
++final class GH10049BookId extends GH10049AggregatedRootId
++{
++}
++
++/**
++ * @Entity
++ */
++class GH10049Book
++{
++    /** @Embedded(columnPrefix=false) */
++    public readonly GH10049BookId $id;
++
++    public function __construct(?GH10049BookId $id = null)
++    {
++        $this->id = $id ?? new GH10049BookId();
++    }
++}
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+index e84de57940f..4e363ae3052 100644
+--- a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Test.php
+@@ -4,11 +4,6 @@
+
+ namespace Doctrine\Tests\ORM\Functional\Ticket;
+
+-use Doctrine\ORM\Mapping\Column;
+-use Doctrine\ORM\Mapping\Embeddable;
+-use Doctrine\ORM\Mapping\Embedded;
+-use Doctrine\ORM\Mapping\Entity;
+-use Doctrine\ORM\Mapping\Id;
+ use Doctrine\Tests\OrmFunctionalTestCase;
+
+ /**
+@@ -19,6 +14,8 @@ class GH10049Test extends OrmFunctionalTestCase
+ {
+     protected function setUp(): void
+     {
++        require_once __DIR__ . '/GH10049Mocks.php';
++
+         parent::setUp();
+
+         $this->_schemaTool->createSchema(
+@@ -56,46 +53,7 @@ public function testIssue(): void
+
+         // assert Book was persisted and could be hydrated
+         self::assertInstanceOf(GH10049Book::class, $persistedBook);
++        self::assertInstanceOf(GH10049BookId::class, $persistedBook->id);
+         self::assertEquals($id, $persistedBook->id->value);
+     }
+ }
+-
+-abstract class GH10049AggregatedRootId
+-{
+-    /**
+-     * @Id
+-     * @Column(name="id", type="string")
+-     */
+-    public readonly string $value;
+-
+-    public function __construct(?string $value = null)
+-    {
+-        $this->value = $value ?? 'a';
+-    }
+-
+-    public function __toString()
+-    {
+-        return $this->value;
+-    }
+-}
+-
+-/**
+- * @Embeddable
+- */
+-final class GH10049BookId extends GH10049AggregatedRootId
+-{
+-}
+-
+-/**
+- * @Entity
+- */
+-class GH10049Book
+-{
+-    /** @Embedded(columnPrefix=false) */
+-    public readonly GH10049BookId $id;
+-
+-    public function __construct(?GH10049BookId $id = null)
+-    {
+-        $this->id = $id ?? new GH10049BookId();
+-    }
+-}
+
+From 6e3e06a8bca11116587b7388d6c03e974202bb2f Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 23:26:44 +0200
+Subject: [PATCH 5/8] Fix cs
+
+---
+ lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php     | 1 -
+ tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php | 5 -----
+ 2 files changed, 6 deletions(-)
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index 19e25fb9efd..d8b19fa1d72 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -9,7 +9,6 @@
+ use ReturnTypeWillChange;
+
+ use function method_exists;
+-use function var_dump;
+
+ /**
+  * Acts as a proxy to a nested Property structure, making it look like
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+index feeb26cb1e4..dcd7424d6d8 100644
+--- a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+@@ -26,11 +26,6 @@ public function __construct(?string $value = null)
+     {
+         $this->value = $value ?? 'a';
+     }
+-
+-    public function __toString()
+-    {
+-        return $this->value;
+-    }
+ }
+
+ /**
+
+From 958c3e4d272f056d993e5065bdeeaa331298ebaf Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Thu, 22 Sep 2022 23:27:43 +0200
+Subject: [PATCH 6/8] Fix typo
+
+---
+ tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+index dcd7424d6d8..a361a493f7d 100644
+--- a/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
++++ b/tests/Doctrine/Tests/ORM/Functional/Ticket/GH10049Mocks.php
+@@ -11,7 +11,7 @@
+ use Doctrine\ORM\Mapping\Id;
+
+ /**
+- * This file is required to be in a separate file to allow using PHP 8.1 features which will otherwise break tests against PHP 8.0 or lower
++ * This is required to be in a separate file to allow using PHP 8.1 features which will otherwise break tests against PHP 8.0 or lower
+  */
+
+ abstract class GH10049AggregatedRootId
+
+From 6e65c3138bc9e5415f3f0f06b1ff2ac055aeb41d Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Fri, 23 Sep 2022 19:05:20 +0200
+Subject: [PATCH 7/8] Update PHP Version check
+
+---
+ lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index d8b19fa1d72..0febe10e61a 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -10,6 +10,8 @@
+
+ use function method_exists;
+
++use const PHP_VERSION_ID;
++
+ /**
+  * Acts as a proxy to a nested Property structure, making it look like
+  * just a single scalar property.
+@@ -80,7 +82,7 @@ public function setValue($object, $value = null)
+             $this->parentProperty->setValue($object, $embeddedObject);
+         }
+
+-        if (method_exists($this->childProperty, 'isReadOnly')) {
++        if (PHP_VERSION_ID >= 80100) {
+             $declaringClass =  $this->childProperty->getDeclaringClass();
+
+             if ($this->childProperty->isReadOnly() && $declaringClass->getName() !== $this->embeddedClass) {
+
+From 2537cf6699f6b03b566dc6b532185b59040f43d8 Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Fri, 23 Sep 2022 20:40:17 +0200
+Subject: [PATCH 8/8] Remove old use
+
+---
+ lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+index 0febe10e61a..fb8db904eba 100644
+--- a/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
++++ b/lib/Doctrine/ORM/Mapping/ReflectionEmbeddedProperty.php
+@@ -8,8 +8,6 @@
+ use ReflectionProperty;
+ use ReturnTypeWillChange;
+
+-use function method_exists;
+-
+ use const PHP_VERSION_ID;
+
+ /**

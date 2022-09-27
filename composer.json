@@ -91,6 +91,11 @@
             "allow-contrib": false,
             "require": "6.1.*",
             "docker": true
+        },
+        "patches": {
+            "doctrine/orm": {
+                "Fix hydrating readonly properties in inheritance": "./patches/doctrine-orm-10059.patch"
+            }
         }
     },
     "require-dev": {
