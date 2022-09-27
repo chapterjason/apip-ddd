@@ -35,7 +35,7 @@ final class DoctrineUserRepositoryTest extends KernelTestCase
 
     protected function setUp(): void
     {
-        static::$connection->executeStatement('TRUNCATE "user"');
+        static::$connection->executeStatement('TRUNCATE "user" CASCADE');
     }
 
     public function testSave(): void

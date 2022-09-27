@@ -28,4 +28,9 @@ final class InMemoryUserRepository extends InMemoryRepository implements UserRep
     {
         return $this->entities[(string) $id] ?? null;
     }
+
+    public function exists(UserId $id): bool
+    {
+        return isset($this->entities[(string) $id]);
+    }
 }

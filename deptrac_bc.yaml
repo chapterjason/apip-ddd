@@ -3,41 +3,41 @@ parameters:
         - ./src
 
     layers:
-        - name: BookStore
-          collectors:
-              - type: directory
-                regex: src/BookStore/.*
+        -   name: Book
+            collectors:
+                -   type: directory
+                    regex: src/Book/.*
+
+        -   name: Order
+            collectors:
+                -   type: directory
+                    regex: src/Order/.*
 
         -   name: User
             collectors:
                 -   type: directory
                     regex: src/User/.*
 
-        -   name: BookOrder
+        -   name: Subscription
             collectors:
                 -   type: directory
-                    regex: src/BookOrder/.*
+                    regex: src/Subscription/.*
 
-        - name: Subscription
-          collectors:
-              - type: directory
-                regex: src/Subscription/.*
+        -   name: Shared
+            collectors:
+                -   type: directory
+                    regex: src/Shared/.*
 
-        - name: Shared
-          collectors:
-              - type: directory
-                regex: src/Shared/.*
-
-        - name: Vendors
-          collectors:
-              - { type: className, regex: ^ApiPlatform\\ }
-              - { type: className, regex: ^Symfony\\ }
-              - { type: className, regex: ^Doctrine\\ }
-              - { type: className, regex: ^Webmozart\\ }
+        -   name: Vendors
+            collectors:
+                - { type: className, regex: ^ApiPlatform\\ }
+                - { type: className, regex: ^Symfony\\ }
+                - { type: className, regex: ^Doctrine\\ }
+                - { type: className, regex: ^Webmozart\\ }
 
     ruleset:
-        BookStore: [ Shared, Vendors ]
+        Order: [ Shared, Vendors, User, Book ]
+        Book: [ Shared, Vendors ]
         User: [ Shared, Vendors ]
-        BookOrder: [ Shared, Vendors ]
         Subscription: [ Shared, Vendors ]
         Shared: [ Vendors ]

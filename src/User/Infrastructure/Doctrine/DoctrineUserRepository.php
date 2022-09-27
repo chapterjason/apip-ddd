@@ -39,4 +39,9 @@ final class DoctrineUserRepository extends DoctrineRepository implements UserRep
     {
         return $this->em->find(self::ENTITY_CLASS, $id->value);
     }
+
+    public function exists(UserId $id): bool
+    {
+        return null !== $this->em->find(self::ENTITY_CLASS, $id->value);
+    }
 }

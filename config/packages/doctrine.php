@@ -16,11 +16,17 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                 'auto_generate_proxy_classes' => true,
                 'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
                 'mappings' => [
-                    'BookStore' => [
+                    'Book' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => '%kernel.project_dir%/src/BookStore/Domain',
-                        'prefix' => 'App\BookStore\Domain',
+                        'dir' => '%kernel.project_dir%/src/Book/Domain',
+                        'prefix' => 'App\Book\Domain',
+                    ],
+                    'Order' => [
+                        'is_bundle' => false,
+                        'type' => 'attribute',
+                        'dir' => '%kernel.project_dir%/src/Order/Domain',
+                        'prefix' => 'App\Order\Domain',
                     ],
                     'Shared' => [
                         'is_bundle' => false,
@@ -39,12 +45,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                         'type' => 'attribute',
                         'dir' => '%kernel.project_dir%/src/User/Domain',
                         'prefix' => 'App\User\Domain',
-                    ],
-                    'BookOrder' => [
-                        'is_bundle' => false,
-                        'type' => 'attribute',
-                        'dir' => '%kernel.project_dir%/src/BookOrder/Domain',
-                        'prefix' => 'App\BookOrder\Domain',
                     ],
                 ],
             ],

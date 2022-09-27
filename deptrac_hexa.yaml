@@ -1,8 +1,8 @@
 parameters:
     paths:
-        - ./src/BookStore
+        - ./src/Book
+        - ./src/Order
         - ./src/User
-        - ./src/BookOrder
         - ./src/Shared
 
     layers:

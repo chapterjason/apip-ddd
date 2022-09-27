@@ -18,6 +18,7 @@ final class UpdateUserCommandHandler implements CommandHandlerInterface
     public function __invoke(UpdateUserCommand $command): User
     {
         $user = $this->userRepository->ofId($command->id);
+
         if (null === $user) {
             throw new MissingUserException($command->id);
         }

@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 class User
 {
     #[ORM\Embedded(columnPrefix: false)]
-    public UserId $id;
+    public readonly UserId $id;
 
     public function __construct(
         #[ORM\Embedded(columnPrefix: false)]
