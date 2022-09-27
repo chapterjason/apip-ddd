@@ -8,6 +8,11 @@ parameters:
               - type: directory
                 regex: src/BookStore/.*
 
+        -   name: User
+            collectors:
+                -   type: directory
+                    regex: src/User/.*
+
         - name: Subscription
           collectors:
               - type: directory
@@ -27,5 +32,6 @@ parameters:
 
     ruleset:
         BookStore: [ Shared, Vendors ]
+        User: [ Shared, Vendors ]
         Subscription: [ Shared, Vendors ]
         Shared: [ Vendors ]
