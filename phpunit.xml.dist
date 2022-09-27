@@ -24,6 +24,9 @@
   <testsuite name="Shared">
     <directory>tests/Shared</directory>
   </testsuite>
+    <testsuite name="User">
+        <directory>tests/User</directory>
+    </testsuite>
   <testsuite name="Subscription">
     <directory>tests/Subscription</directory>
   </testsuite>
