@@ -1,0 +1,76 @@
+From c8f26b7f240f90c4819cd38f70c82bda957f0a55 Mon Sep 17 00:00:00 2001
+From: chapterjason <jason@sourecode.dev>
+Date: Wed, 28 Sep 2022 15:08:34 +0200
+Subject: [PATCH] Add unset fix
+
+---
+ src/Proxy/ProxyGenerator.php | 32 +++++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/src/Proxy/ProxyGenerator.php b/src/Proxy/ProxyGenerator.php
+index 8adbf5dc..8f848261 100644
+--- a/src/Proxy/ProxyGenerator.php
++++ b/src/Proxy/ProxyGenerator.php
+@@ -241,6 +241,32 @@ class <proxyShortClassName> extends \<className> implements \<baseProxyInterface
+ }
+ ';
+ 
++    /**
++     * Generates the list of public properties to be lazy loaded, that are writable.
++     *
++     * @return list<string>
++     */
++    public function getWriteableLazyLoadedPublicPropertiesNames(ClassMetadata $class): array
++    {
++        $properties = [];
++
++        foreach ($class->getReflectionClass()->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
++            $name = $property->getName();
++
++            if (
++                (! $class->hasField($name) && ! $class->hasAssociation($name))
++                || $class->isIdentifier($name)
++                || (method_exists($property, 'isReadOnly') && $property->isReadOnly())
++            ) {
++                continue;
++            }
++
++            $properties[] = $name;
++        }
++
++        return $properties;
++    }
++
+     /**
+      * Initializes a new instance of the <tt>ProxyFactory</tt> class that is
+      * connected to the given <tt>EntityManager</tt>.
+@@ -477,7 +503,7 @@ EOT;
+ 
+         $toUnset = array_map(static function (string $name): string {
+             return '$this->' . $name;
+-        }, $this->getLazyLoadedPublicPropertiesNames($class));
++        }, $this->getWriteableLazyLoadedPublicPropertiesNames($class));
+ 
+         return $constructorImpl . ($toUnset === [] ? '' : '        unset(' . implode(', ', $toUnset) . ");\n")
+             . <<<'EOT'
+@@ -594,7 +620,7 @@ EOT
+      */
+     private function generateMagicSet(ClassMetadata $class)
+     {
+-        $lazyPublicProperties = $this->getLazyLoadedPublicPropertiesNames($class);
++        $lazyPublicProperties = $this->getWriteableLazyLoadedPublicPropertiesNames($class);
+         $reflectionClass      = $class->getReflectionClass();
+         $hasParentSet         = false;
+         $inheritDoc           = '';
+@@ -811,7 +837,7 @@ EOT;
+         $hasParentWakeup = $reflectionClass->hasMethod('__wakeup');
+ 
+         $unsetPublicProperties = [];
+-        foreach ($this->getLazyLoadedPublicPropertiesNames($class) as $lazyPublicProperty) {
++        foreach ($this->getWriteableLazyLoadedPublicPropertiesNames($class) as $lazyPublicProperty) {
+             $unsetPublicProperties[] = '$this->' . $lazyPublicProperty;
+         }
+ 
+-- 
+2.25.1
+
