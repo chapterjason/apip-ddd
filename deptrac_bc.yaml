@@ -3,20 +3,15 @@ parameters:
         - ./src
 
     layers:
-        -   name: Book
+        -   name: BookStore
             collectors:
                 -   type: directory
-                    regex: src/Book/.*
+                    regex: src/BookStore/.*
 
-        -   name: Order
+        -   name: Identity
             collectors:
                 -   type: directory
-                    regex: src/Order/.*
-
-        -   name: User
-            collectors:
-                -   type: directory
-                    regex: src/User/.*
+                    regex: src/Identity/.*
 
         -   name: Subscription
             collectors:
@@ -36,8 +31,7 @@ parameters:
                 - { type: className, regex: ^Webmozart\\ }
 
     ruleset:
-        Order: [ Shared, Vendors, User, Book ]
-        Book: [ Shared, Vendors ]
-        User: [ Shared, Vendors ]
+        BookStore: [ Shared, Vendors ]
+        Identity: [ Shared, Vendors ]
         Subscription: [ Shared, Vendors ]
         Shared: [ Vendors ]

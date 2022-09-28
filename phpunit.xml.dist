@@ -18,14 +18,14 @@
 </php>
 
 <testsuites>
-  <testsuite name="Book">
-    <directory>tests/Book</directory>
+  <testsuite name="BookStore">
+    <directory>tests/BookStore</directory>
   </testsuite>
   <testsuite name="Shared">
     <directory>tests/Shared</directory>
   </testsuite>
-    <testsuite name="User">
-        <directory>tests/User</directory>
+    <testsuite name="Identity">
+        <directory>tests/Identity</directory>
     </testsuite>
   <testsuite name="Subscription">
     <directory>tests/Subscription</directory>

@@ -19,14 +19,14 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                     'Book' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => '%kernel.project_dir%/src/Book/Domain',
-                        'prefix' => 'App\Book\Domain',
+                        'dir' => '%kernel.project_dir%/src/BookStore/Book/Domain',
+                        'prefix' => 'App\BookStore\Book\Domain',
                     ],
                     'Order' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => '%kernel.project_dir%/src/Order/Domain',
-                        'prefix' => 'App\Order\Domain',
+                        'dir' => '%kernel.project_dir%/src/BookStore/Order/Domain',
+                        'prefix' => 'App\BookStore\Order\Domain',
                     ],
                     'Shared' => [
                         'is_bundle' => false,
@@ -43,8 +43,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                     'User' => [
                         'is_bundle' => false,
                         'type' => 'attribute',
-                        'dir' => '%kernel.project_dir%/src/User/Domain',
-                        'prefix' => 'App\User\Domain',
+                        'dir' => '%kernel.project_dir%/src/Identity/User/Domain',
+                        'prefix' => 'App\Identity\User\Domain',
                     ],
                 ],
             ],
