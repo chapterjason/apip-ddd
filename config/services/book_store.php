@@ -12,6 +12,13 @@ use App\BookStore\Book\Infrastructure\ApiPlatform\State\Provider\BookCollectionP
 use App\BookStore\Book\Infrastructure\ApiPlatform\State\Provider\BookItemProvider;
 use App\BookStore\Book\Infrastructure\ApiPlatform\State\Provider\CheapestBooksProvider;
 use App\BookStore\Book\Infrastructure\Doctrine\DoctrineBookRepository;
+use App\BookStore\Buyer\Domain\Repository\BuyerRepositoryInterface;
+use App\BookStore\Buyer\Infrastructure\ApiPlatform\State\Processor\CreateBuyerProcessor;
+use App\BookStore\Buyer\Infrastructure\ApiPlatform\State\Processor\DeleteBuyerProcessor;
+use App\BookStore\Buyer\Infrastructure\ApiPlatform\State\Processor\UpdateBuyerProcessor;
+use App\BookStore\Buyer\Infrastructure\ApiPlatform\State\Provider\BuyerCollectionProvider;
+use App\BookStore\Buyer\Infrastructure\ApiPlatform\State\Provider\BuyerItemProvider;
+use App\BookStore\Buyer\Infrastructure\Doctrine\DoctrineBuyerRepository;
 use App\BookStore\Order\Domain\Repository\OrderRepositoryInterface;
 use App\BookStore\Order\Infrastructure\ApiPlatform\State\Processor\CreateOrderProcessor;
 use App\BookStore\Order\Infrastructure\ApiPlatform\State\Processor\DeleteOrderProcessor;
@@ -86,6 +93,28 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->autoconfigure(false)
         ->tag('api_platform.state_processor', ['priority' => 0]);
 
+    // buyer providers
+    $services->set(BuyerItemProvider::class)
+        ->autoconfigure(false)
+        ->tag('api_platform.state_provider', ['priority' => 0]);
+
+    $services->set(BuyerCollectionProvider::class)
+        ->autoconfigure(false)
+        ->tag('api_platform.state_provider', ['priority' => 0]);
+
+    // buyer processors
+    $services->set(CreateBuyerProcessor::class)
+        ->autoconfigure(false)
+        ->tag('api_platform.state_processor', ['priority' => 0]);
+
+    $services->set(UpdateBuyerProcessor::class)
+        ->autoconfigure(false)
+        ->tag('api_platform.state_processor', ['priority' => 0]);
+
+    $services->set(DeleteBuyerProcessor::class)
+        ->autoconfigure(false)
+        ->tag('api_platform.state_processor', ['priority' => 0]);
+
     // book repositories
     $services->set(BookRepositoryInterface::class)
         ->class(DoctrineBookRepository::class);
@@ -93,4 +122,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     // order repositories
     $services->set(OrderRepositoryInterface::class)
         ->class(DoctrineOrderRepository::class);
+
+    // buyer repositories
+    $services->set(BuyerRepositoryInterface::class)
+        ->class(DoctrineBuyerRepository::class);
 };
