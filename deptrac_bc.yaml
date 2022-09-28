@@ -12,6 +12,11 @@ parameters:
             collectors:
                 -   type: directory
                     regex: src/Identity/.*
+                               
+        -   name: IdentityIntegration
+            collectors:
+                -   type: directory
+                    regex: src/IdentityIntegration/.*
 
         -   name: Subscription
             collectors:
@@ -31,7 +36,8 @@ parameters:
                 - { type: className, regex: ^Webmozart\\ }
 
     ruleset:
-        BookStore: [ Shared, Vendors ]
-        Identity: [ Shared, Vendors ]
+        IdentityIntegration: [ Shared, Vendors ]
+        BookStore: [ Shared, Vendors, IdentityIntegration ]
+        Identity: [ Shared, Vendors, IdentityIntegration ]
         Subscription: [ Shared, Vendors ]
         Shared: [ Vendors ]

@@ -10,6 +10,7 @@ use App\BookStore\Order\Domain\ValueObject\OrderId;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: '"order"')]
 class Order
 {
     #[ORM\Embedded(columnPrefix: false)]

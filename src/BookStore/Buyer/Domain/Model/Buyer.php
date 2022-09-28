@@ -17,7 +17,9 @@ class Buyer
     public function __construct(
         #[ORM\Embedded(columnPrefix: false)]
         public BuyerEmail $email,
+
+        ?BuyerId $id = null,
     ) {
-        $this->id = new BuyerId();
+        $this->id = $id ?? new BuyerId();
     }
 }

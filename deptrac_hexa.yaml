@@ -2,6 +2,7 @@ parameters:
     paths:
         - ./src/BookStore
         - ./src/Identity
+        - ./src/IdentityIntegration
         - ./src/Shared
 
     layers:

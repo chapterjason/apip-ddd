@@ -16,7 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final class DoctrineOrderRepository extends DoctrineRepository implements OrderRepositoryInterface
 {
     private const ENTITY_CLASS = Order::class;
-    private const ALIAS = 'order';
+    private const ALIAS = 'o';
 
     public function __construct(EntityManagerInterface $em)
     {
