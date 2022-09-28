@@ -7,10 +7,10 @@ namespace App\BookStore\Order\Infrastructure\ApiPlatform\State\Processor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\BookStore\Book\Domain\ValueObject\BookId;
+use App\BookStore\Buyer\Domain\ValueObject\BuyerId;
 use App\BookStore\Order\Application\Command\CreateOrderCommand;
 use App\BookStore\Order\Domain\Model\Order;
 use App\BookStore\Order\Infrastructure\ApiPlatform\Resource\OrderResource;
-use App\Identity\User\Domain\ValueObject\UserId;
 use App\Shared\Application\Command\CommandBusInterface;
 use Webmozart\Assert\Assert;
 
@@ -34,7 +34,7 @@ final class CreateOrderProcessor implements ProcessorInterface
 
         $command = new CreateOrderCommand(
             new BookId($data->bookId),
-            new UserId($data->buyerId),
+            new BuyerId($data->buyerId),
         );
 
         /** @var Order $model */

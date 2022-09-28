@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\BookStore\Order\Domain\Model;
 
 use App\BookStore\Book\Domain\Model\Book;
+use App\BookStore\Buyer\Domain\Model\Buyer;
 use App\BookStore\Order\Domain\ValueObject\OrderId;
-use App\Identity\User\Domain\Model\User;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -20,9 +20,9 @@ class Order
         #[ORM\JoinColumn(name: 'book_id', referencedColumnName: 'id')]
         public Book $book,
 
-        #[ORM\ManyToOne(targetEntity: User::class)]
+        #[ORM\ManyToOne(targetEntity: Buyer::class)]
         #[ORM\JoinColumn(name: 'buyer_id', referencedColumnName: 'id')]
-        public User $buyer,
+        public Buyer $buyer,
     ) {
         $this->id = new OrderId();
     }
